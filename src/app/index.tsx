@@ -1,31 +1,21 @@
-import { StatusBar } from "expo-status-bar";
-import { Text, View } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
+import { Redirect } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
-export default function App() {
-  return (
-    <View className="flex-1 bg-white dark:bg-black items-center justify-center px-8">
-      {/* Heading */}
-      <Text className="text-4xl font-extrabold text-gray-800 dark:text-white mb-3 tracking-tight">
-        🚀 Welcome
-      </Text>
+export default function IndexRoute() {
+  const { isSignedIn, isLoaded } = useAuth();
 
-      {/* Subheading */}
-      <Text className="text-xl dark:text-white text-gray-700 mb-8 text-center leading-relaxed">
-        Build beautiful apps with{" "}
-        <Text className="text-blue-500 font-semibold">
-          Expo (Router) + Uniwind 🔥
-        </Text>
-      </Text>
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-black">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
-      {/* Instruction text */}
-      <Text className="text-base text-gray-600 dark:text-white text-center max-w-sm">
-        Start customizing your app by editing{" "}
-        <Text className="font-semibold text-gray-800 dark:text-white">
-          app/index.tsx
-        </Text>
-      </Text>
+  if (isSignedIn) {
+    return <Redirect href="/(app)/home" />;
+  }
 
-      <StatusBar style="dark" />
-    </View>
-  );
+  return <Redirect href="/(auth)/onboarding" />;
 }

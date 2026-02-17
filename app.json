@@ -7,6 +7,19 @@
       "output": "static"
     },
     "name": "outia",
-    "slug": "outia"
+    "slug": "outia",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Outia necesita tu ubicación para mostrar clima en tu ruta.",
+          "locationAlwaysPermission": "Outia necesita tu ubicación en segundo plano para alertas de clima.",
+          "locationWhenInUsePermission": "Outia necesita tu ubicación para mostrar clima en tu ruta."
+        }
+      ]
+    ]
   }
 }
