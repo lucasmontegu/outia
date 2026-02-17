@@ -47,6 +47,15 @@ export const recalculateActiveTrips = internalAction({
 });
 
 /**
+ * Checks minutely precipitation for trips departing soon.
+ */
+export const checkMinutelyPrecip = internalAction({
+  handler: async (ctx) => {
+    await ctx.runAction(internal.minutelyPrecipCheck.checkMinutelyPrecip);
+  },
+});
+
+/**
  * Updates weekly day scores for users with saved routes.
  */
 export const updateWeeklyScores = internalAction({

@@ -11,6 +11,8 @@ export interface WeatherPoint {
   windSpeedKmh: number;
   alertType?: string;
   alertSeverity?: "minor" | "moderate" | "severe" | "extreme";
+  uvIndex?: number;
+  visibilityKm?: number;
 }
 
 export interface PointRiskResult {
@@ -19,22 +21,24 @@ export interface PointRiskResult {
 }
 
 // ─── Point Risk ──────────────────────────────────────────────
-// precipScore (max 50) + windScore (max 20) + alertScore (max 30)
+// precipScore (max 40) + windScore (max 20) + alertScore (max 20) + uvScore (max 10) + visibilityScore (max 10) = 100
 
 export function calculatePointRisk(point: WeatherPoint): PointRiskResult {
   const precipScore = calcPrecipScore(point);
   const windScore = calcWindScore(point.windSpeedKmh);
   const alertScore = calcAlertScore(point);
+  const uvScore = calcUvScore(point.uvIndex);
+  const visScore = calcVisibilityScore(point.visibilityKm);
 
-  const riskScore = Math.min(100, Math.round(precipScore + windScore + alertScore));
+  const riskScore = Math.min(100, Math.round(precipScore + windScore + alertScore + uvScore + visScore));
   return { riskScore, riskLevel: scoreToLevel(riskScore) };
 }
 
 function calcPrecipScore(point: WeatherPoint): number {
-  const probFactor = (point.precipProb / 100) * 30; // max 30 from probability
+  const probFactor = (point.precipProb / 100) * 25; // max 25 from probability
   const intensityFactor = point.precipIntensity
-    ? Math.min(20, (point.precipIntensity / 10) * 20) // max 20 from intensity (10mm/h = max)
-    : (point.precipProb / 100) * 10; // fallback estimate
+    ? Math.min(15, (point.precipIntensity / 10) * 15) // max 15 from intensity (10mm/h = max)
+    : (point.precipProb / 100) * 8; // fallback estimate
   return probFactor + intensityFactor;
 }
 
@@ -48,12 +52,29 @@ function calcWindScore(windSpeedKmh: number): number {
 function calcAlertScore(point: WeatherPoint): number {
   if (!point.alertSeverity) return 0;
   const severityMap: Record<string, number> = {
-    minor: 5,
-    moderate: 15,
-    severe: 25,
-    extreme: 30,
+    minor: 3,
+    moderate: 10,
+    severe: 17,
+    extreme: 20,
   };
   return severityMap[point.alertSeverity] ?? 0;
+}
+
+function calcUvScore(uvIndex?: number): number {
+  if (uvIndex == null) return 0;
+  if (uvIndex <= 2) return 0;
+  if (uvIndex <= 5) return 2;
+  if (uvIndex <= 7) return 5;
+  if (uvIndex <= 10) return 8;
+  return 10; // 11+
+}
+
+function calcVisibilityScore(visibilityKm?: number): number {
+  if (visibilityKm == null) return 0;
+  if (visibilityKm > 10) return 0;
+  if (visibilityKm >= 5) return 3;
+  if (visibilityKm >= 2) return 6;
+  return 10; // < 2km
 }
 
 // ─── Route Risk ──────────────────────────────────────────────

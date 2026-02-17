@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { View, StyleSheet } from "react-native";
-import MapView, { Marker, Polyline, Region, PROVIDER_DEFAULT } from "react-native-maps";
+import MapView, { Marker, Polyline, Region, PROVIDER_DEFAULT, UrlTile } from "react-native-maps";
 import { useColors } from "@/hooks/useColors";
 import { decodePolyline, simplifyPolyline, LatLon } from "@/lib/polyline";
 
@@ -12,6 +12,15 @@ interface WeatherMarkerData {
   pointIndex: number;
 }
 
+export type WeatherLayerType = "precipitation" | "clouds" | "temp" | "wind";
+
+const WEATHER_TILE_LAYERS: Record<WeatherLayerType, string> = {
+  precipitation: "precipitation_new",
+  clouds: "clouds_new",
+  temp: "temp_new",
+  wind: "wind_new",
+};
+
 interface RouteMapProps {
   encodedPolyline?: string;
   weatherMarkers?: WeatherMarkerData[];
@@ -22,6 +31,7 @@ interface RouteMapProps {
   renderWeatherMarker?: (marker: WeatherMarkerData) => React.ReactNode;
   style?: any;
   onMarkerPress?: (marker: WeatherMarkerData) => void;
+  weatherLayer?: WeatherLayerType;
 }
 
 const RISK_COLORS = {
@@ -41,6 +51,7 @@ export function RouteMap({
   renderWeatherMarker,
   style,
   onMarkerPress,
+  weatherLayer,
 }: RouteMapProps) {
   const mapRef = useRef<MapView>(null);
   const colors = useColors();
@@ -109,6 +120,17 @@ export function RouteMap({
         showsMyLocationButton={false}
         mapType="standard"
       >
+        {/* Weather tile overlay */}
+        {weatherLayer && (
+          <UrlTile
+            key={weatherLayer}
+            urlTemplate={`https://tile.openweathermap.org/map/${WEATHER_TILE_LAYERS[weatherLayer]}/{z}/{x}/{y}.png?appid=${process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY}`}
+            maximumZ={19}
+            opacity={0.6}
+            zIndex={1}
+          />
+        )}
+
         {/* Route polyline */}
         {coordinates.length > 1 && (
           <Polyline

@@ -4,7 +4,12 @@ import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { calculatePointRisk, calculateDayScore } from "./lib/riskEngine";
+import type { ForecastDataPoint } from "./providers/weatherForecast5day";
 
+/**
+ * Computes weekly day scores using the FREE 5-day/3h forecast endpoint.
+ * One API call covers ~5 days instead of 21 One Call requests.
+ */
 export const computeWeeklyScores = internalAction({
   args: {
     userId: v.id("users"),
@@ -14,53 +19,52 @@ export const computeWeeklyScores = internalAction({
     destLon: v.number(),
   },
   handler: async (ctx, args) => {
-    const today = new Date();
+    // Sample midpoint between origin and destination
+    const midLat = (args.originLat + args.destLat) / 2;
+    const midLon = (args.originLon + args.destLon) / 2;
 
-    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + dayOffset);
-      const dateStr = date.toISOString().split("T")[0];
+    // Single free API call for 5 days of data
+    const forecast: ForecastDataPoint[] = await ctx.runAction(
+      internal.providers.weatherForecast5day.fetch5DayForecast,
+      { lat: midLat, lon: midLon }
+    );
 
-      // Sample midpoint between origin and destination
-      const midLat = (args.originLat + args.destLat) / 2;
-      const midLon = (args.originLon + args.destLon) / 2;
+    if (forecast.length === 0) return;
 
-      // Check weather at typical departure hours (8am, 12pm, 4pm)
-      const departureHours = [8, 12, 16];
+    // Group forecast points by date
+    const byDate = new Map<string, ForecastDataPoint[]>();
+    for (const point of forecast) {
+      const dateStr = new Date(point.dt * 1000).toISOString().split("T")[0];
+      const existing = byDate.get(dateStr) ?? [];
+      existing.push(point);
+      byDate.set(dateStr, existing);
+    }
+
+    // Typical departure hours to evaluate (8am, 12pm, 4pm)
+    const targetHours = [8, 12, 16];
+
+    for (const [dateStr, points] of byDate) {
       const risks: number[] = [];
       let bestHour = 8;
       let bestRisk = 100;
 
-      for (const hour of departureHours) {
-        const targetDate = new Date(dateStr);
-        targetDate.setHours(hour, 0, 0, 0);
-        const targetTime = targetDate.getTime();
+      for (const targetHour of targetHours) {
+        // Find closest forecast point to this target hour
+        const targetEpoch = new Date(`${dateStr}T${String(targetHour).padStart(2, "0")}:00:00`).getTime() / 1000;
+        const closest = points.reduce((a, b) =>
+          Math.abs(a.dt - targetEpoch) < Math.abs(b.dt - targetEpoch) ? a : b
+        );
 
-        try {
-          const weather = await ctx.runAction(
-            internal.providers.weatherRouter.fetchWeatherForPoint,
-            {
-              lat: midLat,
-              lon: midLon,
-              targetTime,
-            }
-          );
+        const risk = calculatePointRisk({
+          precipProb: closest.precipProb,
+          precipIntensity: closest.precipIntensity / 3, // convert mm/3h to mm/h
+          windSpeedKmh: closest.windSpeedKmh,
+        });
 
-          const risk = calculatePointRisk({
-            precipProb: weather.precipProb,
-            precipIntensity: weather.precipIntensity,
-            windSpeedKmh: weather.windSpeedKmh,
-            alertType: weather.alertType,
-            alertSeverity: weather.alertSeverity,
-          });
-
-          risks.push(risk.riskScore);
-          if (risk.riskScore < bestRisk) {
-            bestRisk = risk.riskScore;
-            bestHour = hour;
-          }
-        } catch (err) {
-          console.warn(`Failed to get weather for ${dateStr} ${hour}:00:`, err);
+        risks.push(risk.riskScore);
+        if (risk.riskScore < bestRisk) {
+          bestRisk = risk.riskScore;
+          bestHour = targetHour;
         }
       }
 

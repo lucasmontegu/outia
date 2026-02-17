@@ -3,16 +3,7 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-
-export interface WeatherForecastPoint {
-  conditionCode: string;
-  precipProb: number;
-  precipIntensity: number;
-  tempCelsius: number;
-  windSpeedKmh: number;
-  alertType?: string;
-  alertSeverity?: "minor" | "moderate" | "severe" | "extreme";
-}
+import type { WeatherForecastPoint } from "./weatherRouter";
 
 // NOAA is free — no cost per request
 const COST_PER_REQUEST = 0;

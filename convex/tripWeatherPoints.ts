@@ -34,6 +34,12 @@ export const createBatch = internalMutation({
           v.literal("extreme")
         ),
         provider: v.string(),
+        uvIndex: v.optional(v.number()),
+        visibilityKm: v.optional(v.number()),
+        dewPointCelsius: v.optional(v.number()),
+        humidityPercent: v.optional(v.number()),
+        cloudCoverPercent: v.optional(v.number()),
+        airQualityIndex: v.optional(v.number()),
       })
     ),
   },

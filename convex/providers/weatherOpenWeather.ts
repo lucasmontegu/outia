@@ -3,16 +3,7 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-
-export interface WeatherForecastPoint {
-  conditionCode: string;
-  precipProb: number;
-  precipIntensity: number;
-  tempCelsius: number;
-  windSpeedKmh: number;
-  alertType?: string;
-  alertSeverity?: "minor" | "moderate" | "severe" | "extreme";
-}
+import type { WeatherForecastPoint } from "./weatherRouter";
 
 // OpenWeather One Call 3.0: ~$0.0015 per request
 const COST_PER_REQUEST = 0.0015;
@@ -28,7 +19,7 @@ export const fetchForecast = internalAction({
     const apiKey = process.env.OPENWEATHER_API_KEY;
     if (!apiKey) throw new Error("OPENWEATHER_API_KEY not set");
 
-    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${args.lat}&lon=${args.lon}&exclude=minutely,daily&units=metric&appid=${apiKey}`;
+    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${args.lat}&lon=${args.lon}&exclude=minutely&units=metric&appid=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -85,6 +76,17 @@ export const fetchForecast = internalAction({
       windSpeedKmh: Math.round(closest.wind_speed * 3.6),
       alertType,
       alertSeverity,
+      uvIndex: closest.uvi,
+      visibilityKm:
+        closest.visibility != null
+          ? Math.round((closest.visibility / 1000) * 10) / 10
+          : undefined,
+      dewPointCelsius:
+        closest.dew_point != null
+          ? Math.round(closest.dew_point * 10) / 10
+          : undefined,
+      humidityPercent: closest.humidity,
+      cloudCoverPercent: closest.clouds,
     };
   },
 });

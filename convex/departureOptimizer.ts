@@ -60,7 +60,7 @@ export const analyzeAlternatives = internalAction({
     if (alternativeRisks.length === 0) return;
 
     // Generate AI analysis
-    await ctx.runAction(internal.providers.openai.generateDepartureAnalysis, {
+    await ctx.runAction(internal.providers.llm.generateDepartureAnalysis, {
       tripId: args.tripId,
       userId: trip.userId,
       departureAt: trip.departureAt,

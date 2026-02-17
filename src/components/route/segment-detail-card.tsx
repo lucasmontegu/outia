@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useColors } from "@/hooks/useColors";
-import { Droplets, Wind, Thermometer, AlertTriangle } from "lucide-react-native";
+import { Droplets, Wind, Thermometer, AlertTriangle, CloudRain } from "lucide-react-native";
 
 interface SegmentDetailCardProps {
   conditionCode: string;
@@ -13,7 +13,16 @@ interface SegmentDetailCardProps {
   riskLevel: "low" | "moderate" | "high" | "extreme";
   etaAt: number;
   alertType?: string;
+  airQualityIndex?: number;
 }
+
+const AQI_LABELS: Record<number, { label: string; color: string }> = {
+  1: { label: "Buena", color: "#22c55e" },
+  2: { label: "Aceptable", color: "#84cc16" },
+  3: { label: "Moderada", color: "#eab308" },
+  4: { label: "Mala", color: "#f97316" },
+  5: { label: "Muy mala", color: "#ef4444" },
+};
 
 const RISK_COLORS = {
   low: "#22c55e",
@@ -47,6 +56,7 @@ export function SegmentDetailCard({
   riskLevel,
   etaAt,
   alertType,
+  airQualityIndex,
 }: SegmentDetailCardProps) {
   const colors = useColors();
   const riskColor = RISK_COLORS[riskLevel];
@@ -98,6 +108,14 @@ export function SegmentDetailCard({
             icon={<AlertTriangle size={16} color={colors.orange} />}
             label="Alerta"
             value={alertType}
+          />
+        )}
+        {airQualityIndex != null && AQI_LABELS[airQualityIndex] && (
+          <StatItem
+            colors={colors}
+            icon={<CloudRain size={16} color={AQI_LABELS[airQualityIndex].color} />}
+            label="Aire"
+            value={AQI_LABELS[airQualityIndex].label}
           />
         )}
       </View>

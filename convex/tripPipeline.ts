@@ -95,6 +95,11 @@ export const computeRouteAndWeather = internalAction({
       windSpeedKmh: number;
       alertType?: string;
       alertSeverity?: "minor" | "moderate" | "severe" | "extreme";
+      uvIndex?: number;
+      visibilityKm?: number;
+      dewPointCelsius?: number;
+      humidityPercent?: number;
+      cloudCoverPercent?: number;
     }> = [];
     const batchSize = 5;
 
@@ -125,6 +130,8 @@ export const computeRouteAndWeather = internalAction({
         windSpeedKmh: weather.windSpeedKmh,
         alertType: weather.alertType,
         alertSeverity: weather.alertSeverity,
+        uvIndex: weather.uvIndex,
+        visibilityKm: weather.visibilityKm,
       });
 
       return {
@@ -143,8 +150,42 @@ export const computeRouteAndWeather = internalAction({
         riskScore: risk.riskScore,
         riskLevel: risk.riskLevel,
         provider: "auto",
+        uvIndex: weather.uvIndex,
+        visibilityKm: weather.visibilityKm,
+        dewPointCelsius: weather.dewPointCelsius,
+        humidityPercent: weather.humidityPercent,
+        cloudCoverPercent: weather.cloudCoverPercent,
+        airQualityIndex: undefined as number | undefined,
       };
     });
+
+    // 8b. Fetch air quality if user opted in
+    const user = await ctx.runQuery(internal.users.getInternal, {
+      userId: trip.userId,
+    });
+    if (user?.preferences?.showAirQuality) {
+      const batchSizeAqi = 5;
+      for (let i = 0; i < sampledPoints.length; i += batchSizeAqi) {
+        const batch = sampledPoints.slice(i, i + batchSizeAqi);
+        const aqiResults = await Promise.all(
+          batch.map((point) =>
+            ctx.runAction(
+              internal.providers.weatherAirPollution.fetchAirQuality,
+              { lat: point.lat, lon: point.lon }
+            )
+          )
+        );
+        for (let j = 0; j < aqiResults.length; j++) {
+          const aqi = aqiResults[j];
+          if (aqi != null) {
+            weatherPoints[i + j] = {
+              ...weatherPoints[i + j],
+              airQualityIndex: aqi,
+            };
+          }
+        }
+      }
+    }
 
     // 9. Save weather points
     await ctx.runMutation(internal.tripWeatherPoints.createBatch, {
@@ -176,7 +217,7 @@ export const computeRouteAndWeather = internalAction({
         alert: p.alertType,
       }));
 
-      await ctx.runAction(internal.providers.openai.generateTripSummary, {
+      await ctx.runAction(internal.providers.llm.generateTripSummary, {
         tripId: args.tripId,
         userId: trip.userId,
         departureAt: trip.departureAt,

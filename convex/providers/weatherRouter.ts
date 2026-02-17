@@ -3,7 +3,21 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import type { WeatherForecastPoint } from "./weatherNoaa";
+
+export interface WeatherForecastPoint {
+  conditionCode: string;
+  precipProb: number;
+  precipIntensity: number;
+  tempCelsius: number;
+  windSpeedKmh: number;
+  alertType?: string;
+  alertSeverity?: "minor" | "moderate" | "severe" | "extreme";
+  uvIndex?: number;
+  visibilityKm?: number;
+  dewPointCelsius?: number;
+  humidityPercent?: number;
+  cloudCoverPercent?: number;
+}
 
 /**
  * Routes weather requests to NOAA (US) or OpenWeather (global).

@@ -17,4 +17,11 @@ crons.interval(
   internal.cronHandlers.updateWeeklyScores
 );
 
+// Check minutely precipitation for trips departing within 1 hour
+crons.interval(
+  "minutely-precip-check",
+  { minutes: 10 },
+  internal.cronHandlers.checkMinutelyPrecip
+);
+
 export default crons;

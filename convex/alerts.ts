@@ -10,6 +10,7 @@ export const create = internalMutation({
       v.literal("high_risk"),
       v.literal("weather_change"),
       v.literal("departure_suggestion"),
+      v.literal("rain_imminent"),
       v.literal("system")
     ),
     severity: v.union(

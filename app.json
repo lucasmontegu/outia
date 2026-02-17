@@ -19,7 +19,18 @@
           "locationAlwaysPermission": "Outia necesita tu ubicación en segundo plano para alertas de clima.",
           "locationWhenInUsePermission": "Outia necesita tu ubicación para mostrar clima en tu ruta."
         }
-      ]
-    ]
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "android": {
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.lmontegu.outia"
+    },
+    "ios": {
+      "bundleIdentifier": "com.lmontegu.outia"
+    }
   }
 }

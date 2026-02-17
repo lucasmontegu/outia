@@ -4,6 +4,7 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
+  ScrollView,
   StyleSheet,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -11,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useColors } from "@/hooks/useColors";
 import { useTrip } from "@/hooks/useTrip";
-import { RouteMap } from "@/components/map/route-map";
+import { RouteMap, type WeatherLayerType } from "@/components/map/route-map";
 import { WeatherMarker } from "@/components/map/weather-marker";
 import { RiskScoreBadge } from "@/components/route/risk-score-badge";
 import { TripTimeline } from "@/components/route/trip-timeline";
@@ -21,6 +22,13 @@ import { DepartureSuggestionCard } from "@/components/route/departure-suggestion
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { ArrowLeft, Share2 } from "lucide-react-native";
+
+const WEATHER_LAYERS: { key: WeatherLayerType; label: string }[] = [
+  { key: "precipitation", label: "Lluvia" },
+  { key: "clouds", label: "Nubes" },
+  { key: "temp", label: "Temp" },
+  { key: "wind", label: "Viento" },
+];
 
 export default function RouteScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
@@ -35,6 +43,7 @@ export default function RouteScreen() {
   const snapPoints = useMemo(() => ["15%", "45%", "85%"], []);
 
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [weatherLayer, setWeatherLayer] = useState<WeatherLayerType | undefined>(undefined);
 
   const selectedWeatherPoint = useMemo(
     () =>
@@ -178,6 +187,7 @@ export default function RouteScreen() {
           bottomSheetRef.current?.snapToIndex(1);
         }}
         style={{ flex: 1 }}
+        weatherLayer={weatherLayer}
       />
 
       {/* Floating header */}
@@ -224,6 +234,38 @@ export default function RouteScreen() {
           <RiskScoreBadge score={riskScore} size="md" />
         </View>
       )}
+
+      {/* Weather layer chips */}
+      <View style={[styles.weatherLayerBar, { top: insets.top + 120 }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}>
+          {WEATHER_LAYERS.map(({ key, label }) => {
+            const active = weatherLayer === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setWeatherLayer(active ? undefined : key)}
+                style={[
+                  styles.layerChip,
+                  {
+                    backgroundColor: active ? colors.blue : colors.background + "E6",
+                    borderColor: active ? colors.blue : colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: active ? "#fff" : colors.text,
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Bottom Sheet */}
       <BottomSheet
@@ -323,6 +365,7 @@ export default function RouteScreen() {
                 riskLevel={selectedWeatherPoint.riskLevel}
                 etaAt={selectedWeatherPoint.etaAt}
                 alertType={selectedWeatherPoint.alertType ?? undefined}
+                airQualityIndex={(selectedWeatherPoint as any).airQualityIndex ?? undefined}
               />
             </View>
           )}
@@ -404,5 +447,16 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 28,
+  },
+  weatherLayerBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+  },
+  layerChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
   },
 });

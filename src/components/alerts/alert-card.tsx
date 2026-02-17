@@ -4,7 +4,7 @@ import { useColors } from "@/hooks/useColors";
 import { AlertTriangle, Bell, Clock, Info } from "lucide-react-native";
 
 interface AlertCardProps {
-  type: "high_risk" | "weather_change" | "departure_suggestion" | "system";
+  type: "high_risk" | "weather_change" | "departure_suggestion" | "rain_imminent" | "system";
   severity: "info" | "warning" | "critical";
   title: string;
   message: string;
@@ -17,6 +17,7 @@ const TYPE_ICONS = {
   high_risk: AlertTriangle,
   weather_change: AlertTriangle,
   departure_suggestion: Clock,
+  rain_imminent: Bell,
   system: Info,
 };
 

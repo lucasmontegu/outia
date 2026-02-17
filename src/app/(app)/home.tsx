@@ -9,15 +9,17 @@ import { Button } from "@/components/ui/button";
 import { useColors } from "@/hooks/useColors";
 import { router } from "expo-router";
 import { Calendar, Clock, Settings, ArrowLeft } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   Pressable,
   Modal,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function HomeScreen() {
   const { user } = useUser();
@@ -34,6 +36,31 @@ export default function HomeScreen() {
 
   const [showOriginSearch, setShowOriginSearch] = useState(false);
   const [showDestSearch, setShowDestSearch] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState<"date" | "time">("date");
+
+  // When a day is selected on the WeeklyStrip, update the departure date
+  const handleDaySelect = useCallback(
+    (dateStr: string) => {
+      setSelectedDate(dateStr);
+      const newDate = new Date(dateStr + "T12:00:00");
+      // Find the score for this day to use bestDepartureHour if available
+      const dayScore = weeklyScores?.find((s) => s.date === dateStr);
+      if (dayScore?.bestDepartureHour != null) {
+        newDate.setHours(dayScore.bestDepartureHour, 0, 0, 0);
+      } else {
+        // Preserve current departure time, just change the date
+        const current = planner.departureDate;
+        newDate.setHours(current.getHours(), current.getMinutes(), 0, 0);
+      }
+      // Ensure departure is in the future
+      if (newDate.getTime() < Date.now()) {
+        newDate.setTime(Date.now() + 30 * 60 * 1000);
+      }
+      planner.setDepartureDate(newDate);
+    },
+    [weeklyScores, planner]
+  );
 
   const firstName = user?.firstName ?? "viajero";
 
@@ -166,7 +193,7 @@ export default function HomeScreen() {
               })
             }
             selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
+            onSelectDate={handleDaySelect}
           />
         </View>
 
@@ -202,7 +229,8 @@ export default function HomeScreen() {
               padding: 14,
             }}
             onPress={() => {
-              // TODO: Open date/time picker
+              setDatePickerMode("date");
+              setShowDatePicker(true);
             }}
           >
             <Clock size={18} color={colors.blue} />
@@ -237,6 +265,48 @@ export default function HomeScreen() {
               </Text>
             </View>
           </Pressable>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={planner.departureDate}
+              mode={datePickerMode}
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              minimumDate={new Date()}
+              onChange={(event, selectedDate) => {
+                if (event.type === "dismissed") {
+                  setShowDatePicker(false);
+                  return;
+                }
+                if (selectedDate) {
+                  if (datePickerMode === "date") {
+                    // After picking date, switch to time picker
+                    const updated = new Date(selectedDate);
+                    updated.setHours(
+                      planner.departureDate.getHours(),
+                      planner.departureDate.getMinutes(),
+                      0,
+                      0
+                    );
+                    planner.setDepartureDate(updated);
+                    setDatePickerMode("time");
+                    // On Android, the picker closes between modes
+                    if (Platform.OS === "android") {
+                      setShowDatePicker(true);
+                    }
+                  } else {
+                    // Time picked — finalize
+                    planner.setDepartureDate(selectedDate);
+                    setShowDatePicker(false);
+                  }
+                  // Sync the WeeklyStrip selection
+                  const dateStr = (selectedDate ?? planner.departureDate)
+                    .toISOString()
+                    .split("T")[0];
+                  setSelectedDate(dateStr);
+                }
+              }}
+            />
+          )}
         </View>
 
         {/* Plan trip button */}

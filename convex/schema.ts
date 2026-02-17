@@ -21,6 +21,7 @@ export default defineSchema({
         riskThreshold: v.optional(v.number()),
         units: v.optional(v.union(v.literal("metric"), v.literal("imperial"))),
         notificationsEnabled: v.optional(v.boolean()),
+        showAirQuality: v.optional(v.boolean()),
       })
     ),
   })
@@ -118,6 +119,12 @@ export default defineSchema({
       v.literal("extreme")
     ),
     provider: v.string(),
+    uvIndex: v.optional(v.number()),
+    visibilityKm: v.optional(v.number()),
+    dewPointCelsius: v.optional(v.number()),
+    humidityPercent: v.optional(v.number()),
+    cloudCoverPercent: v.optional(v.number()),
+    airQualityIndex: v.optional(v.number()),
   })
     .index("byTripId", ["tripId"])
     .index("byTripAndLeg", ["tripId", "legId"]),
@@ -143,6 +150,7 @@ export default defineSchema({
       v.literal("high_risk"),
       v.literal("weather_change"),
       v.literal("departure_suggestion"),
+      v.literal("rain_imminent"),
       v.literal("system")
     ),
     severity: v.union(

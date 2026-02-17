@@ -120,6 +120,7 @@ export const updatePreferences = mutation({
       riskThreshold: v.optional(v.number()),
       units: v.optional(v.union(v.literal("metric"), v.literal("imperial"))),
       notificationsEnabled: v.optional(v.boolean()),
+      showAirQuality: v.optional(v.boolean()),
     }),
   },
   handler: async (ctx, args) => {
