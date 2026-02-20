@@ -59,7 +59,7 @@ export const computeRoute = internalAction({
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_AWARE",
       departureTime: args.departureTime,
-      computeAlternativeRoutes: false,
+      computeAlternativeRoutes: true,
       polylineEncoding: "ENCODED_POLYLINE",
     };
 

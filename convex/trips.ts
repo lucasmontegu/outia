@@ -172,6 +172,7 @@ export const listActiveInternal = internalQuery({
   },
 });
 
+
 // Internal mutation for pipeline to update trip after processing
 export const updateFromPipeline = internalMutation({
   args: {
